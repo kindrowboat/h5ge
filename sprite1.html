@@ -1,0 +1,55 @@
+<!DOCTYPE HTML>
+<html lang = "en">
+<head>
+  <title>playing with sprites</title>
+  <meta charset = "UTF-8" />
+  <style type = "text/css">
+  </style>
+
+  <script type = "text/javascript"
+          src = "simpleGame.js"></script>
+
+  <script type = "text/javascript">
+  //<![CDATA[
+  
+
+var canvas;
+var context;
+var sprite;
+
+function init(){
+  canvas = document.getElementById("drawing");
+  context = canvas.getContext("2d");
+  sprite = new Sprite(canvas, "andyGoofy.gif", 50, 50);
+  sprite.setPosition(100, 100);
+  sprite.setSpeed(10);
+  
+  setInterval(gameUpdate, 100);
+}
+
+var angle = 0;
+function gameUpdate(){
+  context.clearRect(0, 0, 400, 400);
+  angle += 10;
+  if (angle < 360){
+    angle = 360;
+  }
+  sprite.setImgAngle(angle);
+  sprite.setMoveAngle(90);
+  sprite.update();
+}
+
+  //]]>
+  </script>
+</head>
+
+<body onload = "init()">
+  <h1>Sprite demo mark 1</h1>
+
+  <canvas id = "drawing"
+          height = "400"
+	  width = "400">
+    <p>Canvas not supported</p>
+  </canvas>
+</body>
+</html>

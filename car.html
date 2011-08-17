@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html lang = "en">
+<head>
+  <title>car using simpleGame engine</title>
+  <meta charset = "UTF-8" />
+  <style type = "text/css">
+  </style>
+  <script type = "text/javascript"
+	  src = "simpleGame.js"></script>
+  <script type = "text/javascript">
+  //<![CDATA[
+
+  var canvas;
+  var context;
+  var car;
+
+  function init(){
+    //initialize variables
+    canvas = document.getElementById("game");
+    context = canvas.getContext("2d");
+
+    //set up car
+    car = new Sprite(canvas, "car.gif", 50, 30);
+    car.setPosition(100, 100);
+    car.setSpeed(0);
+    car.setAngle(20);
+
+    onkeydown = checkKeys;
+    setInterval(update, 100);
+  } // end init
+
+  function update(){
+    context.clearRect(0, 0, 200, 200);
+    car.update();
+    //car.report();
+  } // end update
+
+  function checkKeys(e){
+    if (e.keyCode == 37){
+      //left
+      car.changeAngleBy(-5);
+    } else if (e.keyCode == 39){
+      //right
+      car.changeAngleBy(5);
+    } else if (e.keyCode == 38){
+      //up
+      car.changeSpeedBy(1); 
+    } else if (e.keyCode == 40){
+      car.changeSpeedBy(-1);
+    } // end if
+  } // end checkKeys    
+  //]]>
+  </script>
+</head>
+
+<body onload = "init()">
+  <h1>car game with simpleGame</h1>
+
+  <canvas id = "game"
+	  height = "200"
+	  width = "200"></canvas>
+
+</body>
+</html>

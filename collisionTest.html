@@ -1,0 +1,54 @@
+<!DOCTYPE HTML>
+<html lang = "en">
+<head>
+  <title>Collision test</title>
+  <meta charset = "UTF-8" />
+  <script type = "text/javascript"
+          src = "simpleGame.js"></script>
+  <script type = "text/javascript">
+    var game;
+    var scene;
+    var head;
+    var car;
+    var output;
+    
+    function init(){
+      output = document.getElementById("output");
+      game = document.getElementById("game");
+      scene = new Scene(game);
+      head = new Sprite(game, "andyGoofy.gif", 50, 50);
+      car = new Sprite(game, "car.gif", 50, 30);
+      car.setAngle(0);
+      car.setSpeed(5);
+      
+      scene.start();
+      
+    } // end init
+  
+    function update(){
+      scene.clear();
+      head.update();
+      car.update();
+
+      //report collisions
+      if (head.collidesWith(car)){
+        message = "collision";
+      } else {
+        message = "no collision";
+      } // end if
+        
+      output.innerHTML = message;
+      
+    } // end update
+    
+  </script>
+          
+</head>
+<body onload = "init()">
+  <canvas id = "game"
+          width = "400"
+          height = "400">
+  </canvas>
+  <div id = "output">default</div>
+</body>
+</html>

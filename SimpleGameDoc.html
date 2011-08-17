@@ -1,0 +1,228 @@
+<!DOCTYPE HTML>
+<html lang = "en">
+<head>
+  <title>Simple Game Engine Documentation</title>
+  <meta charset = "UTF-8" />
+</head>
+
+<body>
+  <h1>Simple Game Engine Documentation</h1>
+
+  <h2>Overview</h2>
+  <p>
+    The simpleGame.js library adds game programming features to HTML5-compliant
+    browsers.  The library is designed primarily for 2D Sprite-based games, but it
+    can be used for other game types as well.  The library is designed to be easy
+    enough for beginning game developers to use.
+  </p>
+  
+  <p>
+    The library is object-oriented, and features two primary objects, the sprite
+    and the scene. Each game is based on a scene, and all of the moving objects in
+    the game are sprites.  A scene can contain as many sprites as you wish.  Each
+    sprite is based on a standard image, so any image file you create can become
+    a sprite for your game.
+  </p>
+    
+  <p>Primary features</p>
+  <ul>
+    <li><strong>Canvas-based</strong>
+        The canvas tag is supported in all modern browsers, and
+        can even be used in IE with an add-on.</li>
+    <li><strong>Mobile-ready</strong>
+        Games written with this library will be suitable for use on mobile devices
+        as virtually all such devices come with HTML-5 compliant browsers.</li>
+    <li><strong>Fast</strong>
+        While the speed of the engine is dependent on many other factors, it is
+        reasonably speedy with most modern machines and browsers.</li>
+    <li><strong>Straightforward</strong>
+        The library was designed from the beginning to be easy to teach and learn.
+        It was designed for beginning programmers and beginning game programmers.
+        The syntax is straightforward and consistent, and not overly complex</li>
+    <li><strong>Feature-rich</strong>
+        All the main components of a 2D game engine are available including
+        collision-detection, speed and direction control, arbitrary rotation,
+        and a basic audio system.</li>
+  </ul>
+  <h2>The basic game</h2>
+  <p>
+    A game written with the SimpleGame library is essentially a web page. You
+    should be familiar with basic HTML and JavaScript syntax. Examine the
+    following simple code. It provides the skeleton for all simpleGame games.
+  </p>
+  
+  <pre>
+&lt;!DOCTYPE HTML>
+&lt;html lang="en-US">
+&lt;head>
+	&lt;meta charset="UTF-8">
+	&lt;title>simpleCar.html&lt;/title>
+	&lt;script type = "text/javascript"
+		src = "simpleGame.js">&lt;/script>
+	&lt;script type = "text/javascript">
+
+	var scene;
+	var car;
+	
+	function init(){
+		scene = new Scene();
+		
+		car = new Sprite(scene, "car.gif", 50, 30);
+		car.setSpeed(3);
+		car.setAngle(0);
+		car.setPosition(20, 25);
+
+		scene.start();
+	} // end init
+	
+	function update(){
+		scene.clear();
+		car.update();
+	} // end update
+	
+	&lt;/script>
+&lt;/head>
+&lt;body onload = "init()">
+	&lt;h1>Simple Car&lt;/h1>
+&lt;/body>
+&lt;/html>
+  </pre>
+  <h2>Template code explanation</h2>
+  <p>
+    While this example is not very long, there is quite a bit happening. Here's
+    the details:
+  </p>
+  
+  <ul>
+    <li><strong>Begin with an HTML5 page</strong>
+        Game Engine uses HTML5 features, so begin by building an HTML5 page.
+        Fortunately, HTML5 is quite a bit simpler than XHTML Strict, so this
+        should not be a problem.</li>
+    <li><strong>Include the simpleGame.js library</strong>
+        The library is simply a text file you can download and incorporate into
+        your pages as an external js file. For best performance, include the
+        simplegame.js file in the same directory as your game.</li>
+    <li><strong>Create a new script area for game code</strong>
+        Most of your development will be done in JavaScript, so you'll need
+        a script area to contain your coding.</li>
+    <li><strong>Create variables for your main elements</strong>
+        Most games will have at least two main variables: a scene (which is the
+        game's background), and one or more sprites (the things that move around.)
+        This example will have a single scene called "scene" and a single sprite
+        called "car"</li>
+    <li><strong>Create an <em>init()</em> function</strong>
+        To start the game, use the standard HTML body onload mechanism to call
+        a function called <em>init()</em>. This function will begin your game.</li>
+    <li><strong>Build a Scene object</strong>
+        The scene object is the data representation of your game and its
+        background on the page. The game engine will automatically create a
+        canvas element for you.</li>
+    <li><strong>Build a sprite</strong>
+        Sprites are the elements that move around and bonk into each other.
+        A sprite requires four parameters: the scene, an image, width and
+        height. You can base a sprite on any image, but by default that image
+        should be pointing to the right.</li>
+    <li><strong>Set the car's speed</strong>
+        Sprites are complex objects, but they are easy to use.  Each sprite has
+        a number of things it can do, called <em>methods</em>.  The
+        <em>setSpeed()</em> method allows you to set the initial speed of the car.</li>
+    <li><strong>Set the car's angle</strong>
+        Like the speed, the angle of any sprite can be set easily with a method.
+        A sprite can be pointing in a different direction than it is moving
+        (to skid, for example) but we'll go with a simple form of motion for
+        this example.</li>
+    <li><strong>Start the scene</strong>
+        Once you've set up the initial values for your sprites, you can tell the
+        scene to begin its work.  The scene (like the sprite) has methods to
+        manage all the jobs it can do. Invoke the scene's <em>start()</em>
+        method to start the game.</li>
+    <li><strong>Add an <em>update()</em> function.</strong>
+        In addition to <em>init()</em>, each game should have an <em>update()</em>
+        function.  This function will be automatically called on every frame.
+        (typically 20 times per second.)</li>
+    <li><strong>Clear the scene</strong>
+        The scene has a <em>clear()</em> method, which erases the background.
+        If you do not do this, the sprite will leave a trail on the screen.</li>
+    <li><strong>Update the sprite(s)</strong>
+        The final job of the update function is to tell each sprite to update
+        itself.  Typically you'll call the update function of every sprite.</li>
+  </ul>
+
+<h2>Baby you can drive my car</h2>
+<p>
+  So far this is a good animation, but it's not much of a game. To make a game,
+  you need some sort of user interaction.  With a few changes, it's not hard to
+  let the user drive the car with the keyboard.  Take a look at <a href =
+  "drive.html">drive.html</a> to see how it works.
+</p>
+
+<p>
+  Here's the code.  Most of it's the same, but the <em>update()</em> function
+  has been improved.
+</p>
+
+<pre>
+&lt;!DOCTYPE HTML>
+&lt;html lang="en-US">
+&lt;head>
+    &lt;meta charset="UTF-8">
+    &lt;title>Drive.html&lt;/title>
+    &lt;script type = "text/javascript"
+            src = "simpleGame.js">&lt;/script>
+    &lt;script type = "text/javascript">
+      var scene;
+      var car;
+      function init(){
+        scene = new Scene();
+        car = new Sprite(scene, "car.gif", 50, 30);
+        
+        car.setSpeed(3);
+        car.setAngle(0);
+        scene.start();
+      } // end init
+      
+      function update(){
+        scene.clear();
+        if (keysDown[K_LEFT]){
+          car.changeAngleBy(-5);
+        }
+        if (keysDown[K_RIGHT]){
+          car.changeAngleBy(5);
+        }
+        if (keysDown[K_UP]){
+          car.changeSpeedBy(1);
+        }
+        if (keysDown[K_DOWN]){
+          car.changeSpeedBy(-1);
+        }
+        car.update();
+      } // end update
+    &lt;/script>
+&lt;/head>
+
+&lt;body onload = "init()">
+  &lt;title>Drive.html&lt;/title>
+  &lt;h1>A basic car you can drive&lt;/h1>
+&lt;/body>
+&lt;/html>  
+</pre>
+
+<p>
+  The new code isn't terribly shocking. In the <em>update()</em> function, you
+  simply check to see if any keys have been pressed.  SimpleGame has a large
+  array which shows the current status of any key.  You can use special
+  constants (K_UP, K_DOWN, K_SPACE, K_A, and so on) to simplify checking for
+  a particular key press.
+</p>
+
+<p>
+  If the player presses the up key, accellerate the car by using the sprite's
+  <em>changeSpeedBy()</em> method.  The down key works the same way, but change
+  the car's speed by a negative value. The left and right keys are the steering
+  control. You can change the car's direction with the <em>changeAngleBy()</em>
+  method.
+</p>
+
+  
+</body>
+</html>

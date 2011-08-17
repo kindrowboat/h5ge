@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html lang = "en">
+<head>
+  <title>key demo</title>
+  <meta charset = "UTF-8" />
+  <script type = "text/javascript"
+          src = "simpleGame.js"></script>
+  <script type = "text/javascript">
+  var game;
+  var scene;
+  var output;
+  var x = 0;
+  
+  function init(){
+    game = document.getElementById("game");
+    output = document.getElementById("output");
+    scene = new Scene(game);
+    scene.start();
+  }
+  
+  function update(){
+    message = "";
+    if (currentKey == K_LEFT){
+        message = "left";
+    } else if (currentKey == K_RIGHT){
+        message = "right";
+    } else if (currentKey == K_UP){
+        message = "up";
+    } else if (currentKey == K_DOWN){
+        message = "down";
+    }
+    output.innerHTML = message;
+  }
+  
+  </script>
+  
+</head>
+<body onload = "init()">
+  <h1>Press an arrow key...</h1>
+  <canvas id = "game"
+          height = "100"
+          width = "100"></canvas>
+  <div id = "output">Default</div>
+
+</body>
+</html>

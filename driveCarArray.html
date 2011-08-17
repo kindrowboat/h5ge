@@ -1,0 +1,47 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>driveCarArray.html</title>
+	<script type = "text/javascript"
+					src = "simpleGame.js"></script>
+	<script type = "text/javascript">
+	var canv;
+	var scene;
+	var car;
+	
+	function init(){
+		canv = document.getElementById("game");
+		scene = new Scene(canv);
+		car = new Sprite(canv, "car.gif", 50, 30);
+		car.setSpeed(1);
+		car.setAngle(0);
+		scene.start();
+	} // end init
+	
+	function update(){
+		scene.clear()
+	  if (keysDown[K_LEFT]){
+			car.changeAngleBy(-5);
+		}
+	  if (keysDown[K_RIGHT]){
+			car.changeAngleBy(5);
+		}
+	  if (keysDown[K_UP]){
+			car.changeSpeedBy(1);
+		}
+	  if (keysDown[K_DOWN]){
+			car.changeSpeedBy(-1);
+		}
+		car.update();
+	} // end update
+	
+	</script>
+</head>
+<body onload = "init()">
+	<h1>Drive car with array-based key input</h1>
+  <canvas id = "game"
+	        height = "300"
+					width = "300"></canvas>
+</body>
+</html>

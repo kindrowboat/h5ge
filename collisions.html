@@ -1,0 +1,68 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>collisions.html</title>
+  <script type = "text/javascript"
+          src = "simpleGame.js"></script>
+  <script type = "text/javascript">
+  var scene;
+  var car;
+  var hydrant;
+  var crash;
+  
+  function init(){
+    scene = new Scene();
+    car = new Sprite(scene, "car.gif", 50, 30);
+    hydrant = new Sprite(scene, "hydrant.gif", 30, 30);
+    car.setPosition(100, 100);
+    car.setSpeed(5);
+    hydrant.setPosition(200, 100);
+    hydrant.setSpeed(0);
+    
+    crash = new Sound("crash.ogg");
+    
+    scene.start();
+  } // end init
+  
+  function steerCar(){
+    if (keysDown[K_UP]){
+        car.changeSpeedBy(1);
+    }
+    if (keysDown[K_DOWN]){
+        car.changeSpeedBy(-1);
+    }
+    if (keysDown[K_LEFT]){
+        car.changeAngleBy(-5);
+    }
+    if (keysDown[K_RIGHT]){
+        car.changeAngleBy(5);
+    }
+    
+  } // end steerCar
+
+  function checkCollisions(){
+    if (car.collidesWith(hydrant)){
+        crash.play();
+        x = Math.random() * scene.width;
+        y = Math.random() * scene.height;
+        hydrant.setPosition(x, y);
+    } // end if    
+  } // end checkCollisions
+
+  function update(){
+    scene.clear();
+    
+    steerCar();
+    checkCollisions();  
+    
+    hydrant.update();
+    car.update();
+  } // end update
+  
+  </script>
+</head>
+<body onload = "init()">
+  <h1>Steer the car and hit the hydrant</h1>
+</body>
+</html>

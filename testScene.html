@@ -1,0 +1,52 @@
+<!DOCTYPE HTML>
+<html lang = "en">
+<head>
+  <title></title>
+  <meta charset = "UTF-8" />
+  <style type = "text/css">
+  </style>
+  <script type = "text/javascript"
+          src = "simpleGame.js"></script>
+
+  <script type = "text/javascript">
+  //<![CDATA[
+  NUMCARS = 50;
+  var car = new Array(NUMCARS);
+  var game;
+  var scene;
+
+  function init(){
+    game = document.getElementById("game");
+    scene = new Scene(game);
+
+    for (i = 0; i < car.length; i++){
+      car[i] = new Sprite(game, "car.gif", 50, 30);
+      car[i].setPosition(100, 100);
+      car[i].setSpeed(5);
+      car[i].setAngle(20);
+    } // end for
+
+    scene.start();
+  }
+
+  function update(){
+    scene.clear();
+    for(i = 0; i < car.length; i++){
+      angle = (Math.random() * 10) -5;
+      car[i].changeAngleBy(angle);
+      car[i].update();
+    } // end for
+  } // end function
+
+  //]]>
+  </script>
+</head>
+
+<body onload = "init()">
+  <h1>Test a Scene</h1>
+  <canvas id = "game"
+          width = "200"
+          height = "200">
+  </canvas>
+</body>
+</html>

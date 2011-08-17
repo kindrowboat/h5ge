@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>crash.html</title>
+    <script type = "text/javascript"
+            src = "simpleGame.js"></script>
+    <script type = "text/javascript">
+    var scene;
+    
+    function init(){
+      scene = new Scene();
+      scene.start();
+      
+      crash = new Sound("crash.ogg");
+    } // end init
+    
+    function update(){
+      scene.clear();
+      if (keysDown[K_SPACE]){
+        crash.play();
+      }
+    } // end update
+    </script>
+</head>
+<body onload = "init()">
+    <h1>Crash.html</h1>
+    <h2>test simpleGame sound effects</h2>
+</body>
+</html>

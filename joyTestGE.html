@@ -1,0 +1,44 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>joyTest.html</title>
+    <script type="text/javascript"
+            src = "simpleGame.js"></script>
+    <script type="text/javascript">
+        var scene;
+        var joy;
+        var txtDiffX;
+        var txtDiffY;
+        
+        function init(){
+          scene = new Scene();
+          joy = new Joy();
+          txtDiffX = document.getElementById("txtDiffX");
+          txtDiffY = document.getElementById("txtDiffY");
+          
+          scene.start();
+        } // end init
+        
+        function update(){
+            scene.clear();
+            console.log("Main DX: " + joy.getDX());
+            txtDiffX.value = joy.diffX;
+            txtDiffY.value = joy.diffY;
+        } // end update
+        
+    </script>
+</head>
+<body onload = "init()">
+  <form action="">
+    <fieldset>
+        <label for="txtDiffX">DiffX
+            <input type="text" name="txtDiffX" id="txtDiffX" />
+        </label>
+        <label for="txtDiffY">DiffY
+            <input type="text" name="txtDiffY" id="txtDiffY" />
+        </label>
+    </fieldset>
+  </form>    
+</body>
+</html>

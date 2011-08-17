@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>soundTest.html</title>
+    <script type = "text/javaScript">
+
+    var crash;
+    
+    function loadSound(){
+        crash = document.createElement("audio");
+        //document.body.appendChild(crash);
+        crash.src = "crash.ogg";
+    } // end loadSound
+    
+    function playSound(){
+        crash.play();
+    } // end playSound
+    </script>
+</head>
+<body onload = "loadSound()">
+    <form>
+        <button type = "button"
+                onclick = "playSound()">
+            Play sound
+        </button>
+    </form>
+</body>
+</html>

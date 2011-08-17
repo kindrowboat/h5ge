@@ -1,0 +1,34 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>simpleCar.html</title>
+	<script type = "text/javascript"
+		src = "simpleGame.js"></script>
+	<script type = "text/javascript">
+
+	var scene;
+	var car;
+	
+	function init(){
+		scene = new Scene();
+		
+		car = new Sprite(scene, "car.gif", 50, 30);
+		car.setSpeed(3);
+		car.setAngle(0);
+		car.setPosition(20, 25);
+
+		scene.start();
+	} // end init
+	
+	function update(){
+		scene.clear();
+		car.update();
+	} // end update
+	
+	</script>
+</head>
+<body onload = "init()">
+	<h1>Simple Car</h1>
+</body>
+</html>

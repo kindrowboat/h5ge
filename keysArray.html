@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>keysArray.html</title>
+	<script type = "text/javascript"
+					src = "simpleGame.js"></script>
+	<script type = "text/javascript">
+	var game;
+	var scene;
+	var output;
+	
+	function init(){
+		output = document.getElementById("output");
+		game = document.getElementById("game");
+		scene = new Scene(game);
+		scene.start();
+	} // end init
+	
+	function update(){
+		message = ""
+		if (keysDown[K_LEFT]){
+			message = "left, ";
+		} // end if
+		if (keysDown[K_RIGHT]){
+			message = "right, ";
+		} // end if
+		if (keysDown[K_UP]){
+			message = "up, ";
+		} // end if
+		if (keysDown[K_DOWN]){
+			message = "down, ";
+		} // end if
+		
+		output.innerHTML = message;
+	} // end update
+	
+	</script>
+</head>
+<body onload = "init()">
+	<h1>KeyDown Array Check</h1>
+	
+	<canvas id = "game"
+					height = "300"
+					width = "400"></canvas>
+	<div id = "output">default</div>
+</body>
+</html>

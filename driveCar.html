@@ -1,0 +1,52 @@
+<!DOCTYPE HTML>
+<html lang = "en">
+<head>
+  <title>driveCar.html</title>
+  <meta charset = "UTF-8" />
+  <script type = "text/javascript"
+          src = "simpleGame.js"></script>
+  <script type = "text/javascript">
+  var game;
+  var scene;
+  var car;
+  
+  function init(){
+    game = document.getElementById("game");
+    scene = new Scene(game);
+    car = new Sprite(game, "car.gif", 50, 30);
+    scene.start();
+  } // end init
+  
+  function update(){
+    scene.clear();
+    
+    if (currentKey == K_LEFT){
+        car.changeAngleBy(-5);
+    }
+    if (currentKey == K_RIGHT){
+        car.changeAngleBy(5);
+    }
+    if (currentKey == K_UP){
+        car.changeSpeedBy(1);
+    }
+    if (currentKey == K_DOWN){
+        car.changeSpeedBy(-1);
+    } // end if
+    
+    car.update();
+  }
+  </script>
+  <style type = "text/css">
+  canvas {
+    background-color: gray;
+  }
+  </style>
+</head>
+<body onload = "init()">
+  <h1>Use the arrow keys to drive the car</h1>
+  <canvas id = "game"
+          width = "400",
+          height = "300"></canvas>
+  
+</body>
+</html>

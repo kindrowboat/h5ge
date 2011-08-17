@@ -1,0 +1,110 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <title>Controller.html</title>
+  <script type="text/javascript">
+  var touchable;
+  var output;
+  var box;
+  var result = "No touch";
+  var counter = 0;
+  var touches = [];
+  var startX, startY;
+  var diffX = 0;
+  var diffY = 0;
+  var bTop = 0;
+  var bLeft = 0;
+  var SENSITIVITY = 50; //smaller numbers = more sensitive
+  
+  function init(){
+    touchable = 'createTouch' in document;
+    output = document.getElementById("output");
+    box = document.getElementById("box");
+    if (touchable){
+      document.addEventListener('touchstart', onTouchStart, false);
+      document.addEventListener('touchmove', onTouchMove, false);
+      document.addEventListener('touchend', onTouchEnd, false);
+      
+    } // end if
+    setInterval(update, 10);
+  } // end init
+  
+  function onTouchStart(event){
+    result = "touch";
+    touches = event.touches;
+    startX = touches[0].screenX;
+    startY = touches[0].screenY;
+  } // end onTouchStart
+  
+  function onTouchMove(event){
+    event.preventDefault();
+    touches = event.touches;
+    diffX = touches[0].screenX - startX;
+    diffY = touches[0].screenY - startY;
+  } // end onTouchMove
+  
+  function onTouchEnd(event){
+    result = "no touch";
+    touches = event.touches;
+    diffX = 0;
+    diffY = 0;
+  } // end onTouchEnd
+  
+  function update(){
+    counter++;
+    output.innerHTML = counter + ": " + result + "<br />";
+    output.innerHTML += "diff: (" + diffX + ", " + diffY + ") <br />";
+  
+    //move box according to controller
+    bTop += (diffY/SENSITIVITY);
+    bLeft += (diffX /SENSITIVITY);
+    
+    output.innerHTML += "bTop: " + bTop + ", bLeft: " + bLeft;
+    
+    box.style.top = bTop + "px";
+    box.style.left = bLeft + "px";
+       
+  } // end updata
+  
+  </script>
+  <style type="text/css">
+    #scene {
+      width: 100px;
+      height: 100px;
+      color: white;
+      background-color: black;
+    }
+    
+    #box {
+      width: 10px;
+      height: 10px;
+      background-color: red;
+    }
+    
+    /* remove special touch styles */
+    * {
+      -webkit-touch-callout: none;
+      -webkit-text-size-adjust: none;
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+<body onload = "init()">
+  <h1>Controller</h1>
+  
+  <p>
+  a controller for ipad
+  </p>
+  
+  <div id = "box"
+       style = "position: absolute; left:0px; top: 0px;">
+  </div>
+  
+  <div id = "output">
+    No touch
+  </div>
+  
+</body>
+</html>
