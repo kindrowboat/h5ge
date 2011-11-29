@@ -1,0 +1,65 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>AnimationTest.html</title>
+    <script type = "text/javascript"
+            src = "simpleGame.js"></script>
+    <script type = "text/javascript">
+      var scene;
+      var stickMan;
+      
+      function init(){
+        scene = new Scene();
+        //I do not know what license walkCycle.png is under. I grabbed it from here: http://www.dreamincode.net/forums/topic/194878-xna-animated-sprite/
+		stickMan = new Sprite(scene, "walkCycle.png", 32, 48);
+		stickMan.loadAnimation(512, 48, 32, 48);
+		stickMan.generateAnimationCycles(SINGLE_ROW, 4);
+		cycleNames = new Array("down", "left", "right", "up");
+		stickMan.renameCycles(cycleNames);
+		
+		/*stickMan = new Sprite(scene, "StickWalk.png", 32, 32);
+		stickMan.loadAnimation(256, 256, 32, 32);
+		stickMan.generateAnimationCycles();
+		stickMan.renameCycles( new Array("right", "down", "left", "up") );*/
+		
+		stickMan.setSpeed(1);
+		stickMan.setPosition(100,100);
+		//stickMan.specifyCycle("down", 0, 4);
+		//stickMan.specifyCycle("left", 4, 4);
+		//stickMan.specifyCycle("right", 8, 4);
+		//stickMan.specifyCycle("up", 12, 4);
+		//stickMan.setCurrentCycle("right");
+        
+		scene.start();
+      } // end init
+      
+      function update(){
+        scene.clear();
+        if (keysDown[K_LEFT]){
+          stickMan.setCurrentCycle("left");
+		  stickMan.setMoveAngle(180);
+        }
+        if (keysDown[K_RIGHT]){
+          stickMan.setCurrentCycle("right");
+		  stickMan.setMoveAngle(0);
+        }
+        if (keysDown[K_UP]){
+          stickMan.setCurrentCycle("up");
+		  stickMan.setMoveAngle(270);
+        }
+        if (keysDown[K_DOWN]){
+          stickMan.setCurrentCycle("down");
+		  stickMan.setMoveAngle(90);
+        }
+        stickMan.update();
+      } // end update
+    </script>
+</head>
+
+<body onload = "init()">
+  <title>StickMan Animation1.html</title>
+  <h1>StickMan Animation</h1>
+  <div id="FPS" name="FPS"> </div>
+</body>
+</html>
