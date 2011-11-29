@@ -9,20 +9,374 @@
   var currentKey = null;
   var keysDown = new Array(256);
 
-function Sprite(scene, imageFile, width, height){
+var Timer = function()
+{
+   this.date = new Date();
+   this.lastTime = 0;
+   this.currentTime = 0;
+   
+   this.start = function(){ 
+	 this.currentTime = Date.now();
+   }
+   
+   this.reset = function(){ 
+	 this.currentTime = Date.now();
+   }
+   
+   this.getTimeElapsed = function(){ 
+     this.lastTime = this.currentTime;
+	 this.currentTime = Date.now();
+	 return (this.currentTime - this.lastTime);
+   }
+}
+
+function Animation(spriteSheet, imgWidth, imgHeight, cellWidth, cellHeight){//for simplicity, all cells must be the same width and height combination
+  this.sheet = spriteSheet;
+  this.imgWidth = imgWidth;
+  this.imgHeight = imgHeight;
+  this.cellWidth = cellWidth;
+  this.cellHeight = cellHeight;
+  this.animationLength = 1000;
+  this.changeLength = false;
+  this.cycles = new Array();
+  this.currentCycleName = "";
+  this.currentCycle = null;
+  this.cyclePlaySettings = new Array( PLAY_LOOP, PLAY_LOOP, PLAY_LOOP, PLAY_LOOP );
+  this.changeAnimation = false;
+  this.timer = new Timer();
+  this.framesPerRow = 0;
+  this.framesPerColumn = 0;
+  this.totalCycleTime = 0;
+  this.fps = 0;
+  this.isPaused = false;
+  
+  this.setup = function(){
+    this.timer.start();
+	this.framesPerRow = this.imgWidth / this.cellWidth;
+	this.framesPerColumn = this.imgHeight / this.cellHeight;
+  }
+  
+  this.addCycle = function(cycleName, startingCell, frames){
+    cycle = new Array(cycleName, startingCell, frames);
+	this.cycles.push(cycle);
+  }
+  
+  this.drawFrame = function(ctx){//most of the math in this function could be done only once if we want to make it faster
+    this.fps += 1;
+    if( !this.isPaused ){ this.totalCycleTime += this.timer.getTimeElapsed(); }
+    if(this.changeAnimation == true){// find the correct animation in
+	  for( i = 0; i < this.cycles.length; i++ ){ 
+	    if( this.cycles[i][0] == this.currentCycleName ){ 
+		  this.currentCycle = this.cycles[i];
+		}
+	  }
+	}
+	if( this.changeAnimation || this.changeLength ){
+	  this.frameDelta = this.animationLength / this.currentCycle[2]; // this will be how much time should pass at a minimum before switching to the next frame
+	  this.changeAnimation = false;
+	  this.changeLength = false;
+	  this.fps = 0;
+	}
+	currentFrame = Math.floor( (this.totalCycleTime % this.animationLength) / this.frameDelta );
+	document.getElementById("FPS").innerHTML = this.animationLength;//for debugging
+	row = Math.floor( ( this.currentCycle[1] + currentFrame ) / this.framesPerRow );
+	col = (this.currentCycle[1] + currentFrame) - (row * Math.floor(this.imgWidth / this.cellWidth));
+	frameY = row * this.cellHeight;
+	frameX = col * this.cellWidth;
+	ctx.drawImage(this.sheet, frameX, frameY, this.cellWidth, this.cellHeight, 0 - (this.cellWidth / 2), 0 - (this.cellHeight / 2), this.cellWidth, this.cellHeight);
+  }
+  
+  this.setCycle = function(cycleName){
+    this.currentCycleName = cycleName;
+	this.changeAnimation = true;
+	this.totalCycleTime = 0;
+  }
+  
+  this.renameCycles = function(cycleNames){
+    for(i = 0; i < cycleNames.length; i++){
+	  number = parseInt( this.cycles[i][0].slice(5) );
+	  if(this.currentCycleName == this.cycles[i][0]){ this.currentCycleName = cycleNames[number-1]; }
+	  this.cycles[i][0] = cycleNames[number-1];
+	}
+  }
+  
+  this.play = function(){
+    this.isPaused = false;
+	this.timer.reset();
+  }
+  
+  this.pause = function(){
+    this.isPaused = true;
+  }
+  
+  this.reset = function(){
+    this.totalCycleTime = 0;
+	this.timer.reset();
+  }
+  
+  this.setAnimationSpeed = function( animLength ){//animLength is in milliseconds
+    if( animLength <= 50 ){ animLength = 50; }
+	this.animationLength = animLength;
+	this.changeLength = true;
+  }
+  
+}// end of Animation class
+
+function Camera(scene){
+  this.canvas = scene.canvas;
+  this.context = this.canvas.getContext("2d");
+  this.cHeight = parseInt(this.canvas.height);
+  this.cWidth = parseInt(this.canvas.width);
+  this.cameraOffsetX = 0;
+  this.cameraOffsetY = 0;
+  this.target = false;
+  this.waitX = 0;
+  this.waitY = 0;
+  this.focalPointX = 0;
+  this.focalPointY = 0;
+  
+  this.moveCamera = function(x, y){
+    this.cameraOffsetX += x;
+	this.cameraOffsetY += y;
+  }
+  
+  this.followSprite = function(sprite, waitX, waitY){
+	this.target = sprite;
+	if( typeof waitX != "undefined" ){
+	  this.waitX = waitX;
+	  this.waitY = waitY;
+	}
+  }
+  
+  this.update = function(){
+    // center the camera on the sprite
+	this.focalPointX = this.cameraOffsetX + this.cWidth/2;
+	this.focalPointY = this.cameraOffsetY + this.cHeight/2;
+	if(this.target && !this.checkFocusBounds() ){
+	  this.cameraOffsetX = this.target.x + (this.target.width/2) - (this.cWidth/2) + this.waitX;
+	  this.cameraOffsetY = this.target.y + (this.target.height/2) - (this.cHeight/2) + this.waitY;
+	}
+  }
+  
+  this.checkFocusBounds = function(){
+    centerX = this.target.x + (this.target.width/2);
+	centerY = this.target.y + (this.target.height/2);
+    if( Math.abs(this.focalPointX - centerX) >= this.waitX ){ return false; }
+	if( Math.abs(this.focalPointY - centerY) >= this.waitY ){ return false; }
+	else{ return true; }
+  }
+}
+
+function Tile( mapX, mapY, x, y, type ){
+  this.x = x;
+  this.y = y;
+  this.mapX = mapX;
+  this.mapY = mapY;
+  this.isCollidable = false;
+  this.collisionCallback = false;
+  this.type = type;
+  this.isAnimated = false;
+  this.isCollidable = false;
+  this.isClickable = false;
+  this.clickCallback = false;
+  
+  this.setCollision = function( callBack ){
+    this.collisionCallback = callBack;
+	this.isCollidable = true;
+  }
+  
+  this.setAnimation = function(){
+    this.isAnimated = true;
+  }
+  
+  this.setClick = function( callBack ){
+    this.isClickable = true;
+	this.clickCallback = callBack;
+  }
+  
+  this.checkCollision = function( sprite, w, h ){
+    shw = sprite.width/2;
+	shh = sprite.height/2;
+	scx = sprite.x + shw;
+	scy = sprite.y + shh;
+	thw = w/2;
+	thh = h/2;
+	tcx = this.x + thw;
+	tcy = this.y + thh;
+    if( Math.abs( scx - tcx ) < (thw + shw) ){
+	  if( Math.abs( scy - tcy ) < (thh + shh) ){
+	    this.collisionCallback(this);
+	  }
+	}
+  }
+}
+
+function TileMap(scene){
+  this.tileSheet = new Image();
+  this.tiles = new Array();
+  this.symbolImageMap = new Array();
+  this.mapData = false;
+  this.tileWidth = 0;
+  this.tileHeight = 0;
+  this.sheetWidth = 0;
+  this.sheetHeight = 0;
+  this.camera = new Camera(scene);
+  
+  this.loadTileSheet = function(tileWidth, tileHeight, sheetWidth, sheetHeight, tileSheet, tileSymbols){
+    this.tileSheet.src = tileSheet;
+	this.tileWidth = tileWidth;
+	this.tileHeight = tileHeight;
+	this.SheetWidth = sheetWidth;
+	this.SheetHeight = sheetHeight;
+	numRows = Math.floor(this.SheetWidth/this.tileWidth);
+	numCols = Math.floor(this.SheetHeight/this.tileHeight);
+	for(i = 0; i < numRows; i++){
+	  for(j = 0; j < numCols; j++){
+	    if( (i*numCols)+j < tileSymbols.length ){
+	      this.symbolImageMap[(i*numCols)+j] = new Array( j*this.tileWidth, i*this.tileHeight, tileSymbols[(i*numCols)+j] );
+		}
+	  }
+	}
+  }
+  
+  this.loadMapData  = function(mapArray){// mapArray must be a 2-dimensional Array
+    this.mapData = new Array();
+	
+    for(i = 0; i < mapArray.length; i++){
+	  this.mapData.push( new Array() );
+	  temp = new Array();
+	  for(j = 0; j < mapArray[i].length; j++){
+	    k = 0;
+		notConverted = true;
+	    while( notConverted && k < this.symbolImageMap.length ){
+		  if( mapArray[i][j] == this.symbolImageMap[k][2]){ this.mapData[i][j] = k; notConverted = false; } // convert tile symbols to integers for faster comparisons
+		  k++;
+		}
+		temp[j] = new Tile(j, i, j*this.tileWidth, i*this.tileHeight, k);// k = tile type
+	  }
+	  this.tiles.push(temp)
+	}
+  }
+  
+  this.drawMap = function(){//this could be WAY faster
+    this.camera.update();
+    ctx = this.camera.context;
+    for(i = 0; i < this.mapData.length; i++){//for each row
+	  for(j = 0; j < this.mapData[i].length; j++){ //for each column of each row
+	    drawX = this.tiles[i][j].x - this.camera.cameraOffsetX;
+		drawY = this.tiles[i][j].y - this.camera.cameraOffsetY;
+		if( 0 < drawX < this.camera.cWidth && 0 < drawY < this.camera.cHeight ){//don't draw any tiles that will not be in the camera's view
+	      ctx.save();
+	      sheetX = this.symbolImageMap[ this.mapData[i][j] ][0];
+		  sheetY = this.symbolImageMap[ this.mapData[i][j] ][1];
+		  ctx.translate(drawX, drawY);
+		  ctx.drawImage(this.tileSheet, sheetX, sheetY, this.tileWidth, this.tileHeight, 0, 0, this.tileWidth, this.tileHeight);
+		  ctx.restore();
+		}
+	  }
+	}
+  }
+  
+  this.addTileCollision = function( collisionCallback, typeOrX, y ){// accept tile type or coordinates
+    if( typeof y == "undefined" ){ // then the first argument is a tile type
+	  for( i = 0; i < this.tiles.length; i++ ){
+	    for( j = 0; j < this.tiles[i].length; j++ ){
+		  if( this.tiles[i][j].type == typeOrX ){
+		    this.tiles[i][j].setCollision( collisionCallback );
+		  }//end if
+		}//end for j
+	  }//end for i
+	}//end if type
+	else{ // then a tile coordinate was passed in
+	  this.tiles[typeOrX][y].setCollision( collisionCallback );
+	}
+  }
+  
+  this.loadCollisionMap = function( collisionMap ){// tile Symbol and collision Callback - - NOTE: This function will overwrite specific Collision Callbacks
+    //convert collisionMap symbols to their associated integers
+	for( l = 0; l < collisionMap.length; l++ ){
+	  c = 0;
+	  notConverted = true;
+	  while( c < this.symbolImageMap.length && notConverted ){
+	    if( this.symbolImageMap[c][2] == collisionMap[l][0] ){
+	      collisionMap[l][0] = c+1;
+		  notConverted = false;
+	    }
+		c++;
+	  }
+	}
+	//set collision callback for each tile
+    for( i = 0; i < this.tiles.length; i++ ){
+	  for( j = 0; j < this.tiles[i].length; j++ ){
+	    k = 0;
+		notAssigned = true;
+	    while( k < collisionMap.length && notAssigned ){
+	      if( this.tiles[i][j].type == collisionMap[k][0] ){
+		    this.tiles[i][j].setCollision( collisionMap[k][1] );
+			notAssigned = false;
+		  }
+		  k++;
+		}
+	  }
+	}
+  }
+  
+  this.mapScroll = function( dx, dy ){ this.camera.moveCamera(dx, dy); }
+  this.cameraFollowSprite = function(sprite, waitX, waitY){ this.camera.followSprite(sprite, waitX, waitY); }
+  
+  this.loadZOrderMap = function( zMap ){}
+  
+  this.addTileAnimation = function( imgWidth, imgHeight, cellWidth, cellHeight, type, animSheet ){
+    this.animation = new Animation(animSheet, imgWidth, imgHeight, cellWidth, cellHeight);
+	this.animation.setup();
+  }
+  
+  this.addSpecificTileAnimation = function(){
+  
+  }
+  
+  this.checkCollisions = function(sprite){ //check for collisions between sprite and tile
+    tileCoordX = Math.floor( sprite.x/this.tileWidth );
+	tileCoordY = Math.floor( sprite.y/this.tileHeight );
+	checkRowsBegin  = tileCoordX - 1;
+	checkRowsEnd = tileCoordX + 2;
+	checkColsBegin = tileCoordY - 1;
+	checkColsEnd = tileCoordY + 2;
+	if( tileCoordX > -1 && tileCoordY > -1 && tileCoordY < this.mapData.length && tileCoordX < this.mapData[tileCoordY].length ){// if sprite is in a tile
+	  if( tileCoordX == 0 ){ checkRowsBegin = 0; }
+	  if( tileCoordX == (this.mapData[tileCoordY].length-1) ){ checkRowsEnd = this.mapData.length; }
+	  if( tileCoordY == 0 ){ checkColsBegin = 0; }
+	  if( tileCoordY == (this.mapData.length-1) ){ checkColsBegin = this.mapData[tileCoordY].length; }
+	  for( i = checkColsBegin; i < checkColsEnd; i++ ){
+	    for( j = checkRowsBegin; j < checkRowsEnd; j++ ){
+		  if( this.tiles[i][j].isCollidable ){
+		    this.tiles[i][j].checkCollision(sprite, this.tileWidth, this.tileHeight);
+		  }
+		}
+	  }
+	}
+  }
+  
+  this.makeSpriteMapRelative = function(sprite){ sprite.setCameraRelative( this.camera ); }
+  
+  this.setPosition = function(){}
+}
+
+function Sprite(scene, imageFile, width, height){ 
     //core class for game engine
     /*
     TODO:
       Add collision detection (DONE 2/4/11)
-      Add access modifiers for x,y,dx,dy
+      Add access modifiers for x,y,dx,dy (DONE 10/26/11)
       Add multiple boundActions
-      Support multiple images / states
+      Support multiple images / states (DONE 10/26/11)
       Sprite element now expects scene rather than canvas
     */
   this.canvas = scene.canvas;
   this.context = this.canvas.getContext("2d");
   this.image = new Image();
   this.image.src = imageFile;
+  this.animation = false; // becomes Animation Class
   this.width = width;
   this.height = height;
   this.cHeight = parseInt(this.canvas.height);
@@ -34,12 +388,18 @@ function Sprite(scene, imageFile, width, height){
   this.imgAngle = 0;
   this.moveAngle = 0;
   this.speed = 10;
+  this.camera = false;
 
   this.setPosition = function(x, y){
     //position is position of center
     this.x = x; 
     this.y = y;
   } // end setPosition function
+  
+  this.setX = function (nx){ this.x = nx; }
+  this.setY = function (ny){ this.y = ny; }
+  this.setChangeX = function (ndx){ this.dx = ndx; }
+  this.setChangeY = function (ndy){ this.dx = ndx; }
 
   this.draw = function(){
     //draw self on canvas;
@@ -48,14 +408,19 @@ function Sprite(scene, imageFile, width, height){
     ctx = this.context;
 
     ctx.save();
-    ctx.translate(this.x, this.y);
+	if( this.camera ){ ctx.translate(this.x - this.camera.cameraOffsetX, this.y - this.camera.cameraOffsetY); }
+	else{ ctx.translate(this.x, this.y); }
     ctx.rotate(this.imgAngle);
-
     //draw image with center on origin
-    ctx.drawImage(this.image, 
-         0 - (this.width / 2), 
-         0 - (this.height / 2),
-         this.width, this.height);
+	if( this.animation != false ){
+      this.animation.drawFrame(ctx);
+	}
+	else{
+	  ctx.drawImage(this.image, 
+           0 - (this.width / 2), 
+           0 - (this.height / 2),
+           this.width, this.height);
+	}
     ctx.restore();
      
   } // end draw function
@@ -72,23 +437,75 @@ function Sprite(scene, imageFile, width, height){
 		//currently only wraps.
 		//add other boundary-checking behavior
 		//-can be overwritten for custom behavior
-    if (this.x > this.cWidth){
-      this.x = 0;
+	camX = 0;
+	camY = 0;
+	if(this.camera){ camX = this.camera.cameraOffsetX; camY = this.camera.cameraOffsetY; }
+	rightBorder = this.cWidth + camX;
+	leftBorder = camX;
+	topBorder = camY;
+	bottomBorder = this.cHeight + camY;
+    if (this.x > rightBorder){
+      this.x = leftBorder;
     } // end if
 
-    if (this.y > this.cHeight){
-      this.y = 0;
+    if (this.y > bottomBorder){
+      this.y = topBorder;
     } // end if
 
-    if (this.x < 0){
-      this.x = this.cWidth;
+    if (this.x < leftBorder){
+      this.x = rightBorder;
     } // end if
 
-    if (this.y < 0){
-      this.y = this.cHeight;
+    if (this.y < topBorder){
+      this.y = bottomBorder;
     }
   } // end checkbounds
 
+  this.loadAnimation = function (imgWidth, imgHeight, cellWidth, cellHeight){
+    this.animation = new Animation(this.image, imgWidth, imgHeight, cellWidth, cellHeight);
+	this.animation.setup();
+  }
+  
+  this.generateAnimationCycles = function(slicingFlag, framesArray){
+    //Default: assume each row is a cycle and give them names Cycle1, Cycle2, ... , CycleN
+	//SINGLE_ROW: all the sprites are in one row on the sheet, the second parameter is either a number saying each cycle is that many frames or a list of how many frames each cycle is
+	//SINGLE_COLUMN: all the sprites are in one column on the sheet, the second parameter is either a number saying each cycle is that many frames or a list of how many frames each cycle is
+	//VARIABLE_LENGTH: How many frames are in each cycle. framesArray must be defined.
+	cWidth = this.animation.cellWidth;
+	cHeight = this.animation.cellHeight;
+	iWidth = this.animation.imgWidth;
+	iHeight = this.animation.imgHeight;
+	numCycles = 0;
+	nextStartingFrame = 0;
+	  if(typeof framesArray == "number" || typeof slicingFlag == "undefined"){
+	    if( slicingFlag == SINGLE_COLUMN ){ numCycles = (iHeight/cHeight)/framesArray; }
+		else if( typeof slicingFlag == "undefined" ){ numCycles = (iHeight/cHeight); framesArray = iWidth/cWidth; }
+	    else{ numCycles = (iWidth/cWidth)/framesArray; }
+		for(i = 0; i < numCycles; i++){
+		  cycleName = "cycle" + (i+1);
+		  this.specifyCycle(cycleName, i*framesArray, framesArray);
+		}
+	  }
+	  else{
+	    numCycles = framesArray.length;
+		for(i = 0; i < numCycles; i++){ 
+		  cycleName = "cycle" + (i+1);
+		  this.specifyCycle(cycleName, nextStartingFrame, framesArray[i]);
+		  nextStartingFrame += framesArray[i];
+		}
+	  }
+	this.setCurrentCycle("cycle1");
+  }
+  
+  this.renameCycles = function(cycleNames){ this.animation.renameCycles(cycleNames); }
+  this.specifyCycle = function(cycleName, startingCell, frames){ this.animation.addCycle(cycleName, startingCell, frames); }
+  this.specifyState = function(stateName, cellName){ this.animation.addCycle(stateName, cellName, 1); }
+  this.setCurrentCycle = function(cycleName){ this.animation.setCycle(cycleName); }
+  this.pauseAnimation = function(){ this.animation.pause(); }
+  this.playAnimation = function(){ this.animation.play(); }
+  this.resetAnimation = function(){ this.animation.reset(); }
+  this.setAnimationSpeed = function(speed){ this.animation.setAnimationSpeed(speed); }
+  
   this.calcVector = function(){
     //used throughout speed / angle calculations to 
     //recalculate dx and dy based on speed and angle
@@ -165,6 +582,8 @@ function Sprite(scene, imageFile, width, height){
     } // end if
     return collision;
   } // end collidesWith
+  
+  this.setCameraRelative = function( cam ){ this.camera = cam; }
 
   this.report = function(){
       //used only for debugging. Requires browser with JS console
@@ -365,4 +784,6 @@ K_H = 72; K_I = 73; K_J = 74; K_K = 75; K_L = 76; K_M = 77; K_N = 78;
 K_O = 79; K_P = 80; K_Q = 81; K_R = 82; K_S = 83; K_T = 84; K_U = 85;
 K_V = 86; K_W = 87; K_X = 88; K_Y = 89; K_Z = 90;
 K_LEFT = 37; K_RIGHT = 39; K_UP = 38;K_DOWN = 40; K_SPACE = 32;
-  
+//Animation Constants
+SINGLE_ROW = 1; SINGLE_COLUMN = 2; VARIABLE_LENGTH = 3;
+PLAY_ONCE = 1; PLAY_LOOP = 2;
