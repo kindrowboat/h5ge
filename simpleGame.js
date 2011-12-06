@@ -881,38 +881,54 @@ function Joy(){
   //virtual joystick for ipad
   
   //properties
-  this.SENSITIVITY = 50;
-  this.diffX = 0;
-  this.diffY = 0;
+  SENSITIVITY = 50;
+  document.diffX = 0;
+  document.diffY = 0;
   var touches = [];
-  var startX;
-  var startY;
+  document.startX = 0;
+  document.startY = 0;
+  
+  //getters
+  //the dirty little secret (for out at least) is that most of this objects
+  //properies will actually be properties of the document
+  this.getStartX = function(){return document.startX};
+  this.getStartY = function(){return document.startY};
+  this.getDiffX = function(){return document.diffX};
+  this.getDiffY = function(){return document.diffY};
+  
   
   //define event handlers
   this.onTouchStart = function(event){
     result = "touch: ";
     touches = event.touches;
-    startX = touches[0].screenX;
-    startY = touches[0].screenY;
+    document.startX = touches[0].screenX;
+    document.startY = touches[0].screenY;
     result += "x: " + startX + ", y: " + startY;
-    console.log(result);
+    //define mouse position based on touch position
+    document.mouseX = startX;
+    document.mouseY = startY;
+    //console.log(result);
   } // end onTouchStart
   
   this.onTouchMove = function(event){
     result = "move: "
     event.preventDefault();
     touches = event.touches;
-    this.diffX = touches[0].screenX - startX;
-    this.diffY = touches[0].screenY - startY;
+    //map touch position to mouse position
+    document.mouseX = touches[0].screenX;
+    document.mouseY = touches[0].screenY;
+    document.diffX = touches[0].screenX - document.startX;
+    document.diffY = touches[0].screenY - document.startY;
     result += "dx: " + this.diffX + ", dy: " + this.diffY;
-    console.log(result);
+    //console.log(result);
+
   } // end onTouchMove
   
   this.onTouchEnd = function(event){
     result = "no touch";
     touches = event.touches;
-    this.diffX = 0;
-    this.diffY = 0;
+    diffX = 0;
+    diffY = 0;
   } // end onTouchEnd
   
   //add event handlers if appropriate
@@ -922,15 +938,6 @@ function Joy(){
     document.addEventListener('touchmove', this.onTouchMove, false);
     document.addEventListener('touchend', this.onTouchEnd, false);
   } // end if
-  
-  this.getDX = function(){
-    return "At least I work...";
-    return this.diffX;
-  } // end getDX
-  
-  this.getDY = function(){
-    return this.diffY;
-  } // end getDY
 } // end joy class def
 
 function localUpdate(){
