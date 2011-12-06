@@ -5,6 +5,20 @@
    Andy Harris - 2011
 */
 
+/* Tylers TODO:
+   - Add Force Model Physics :: DONE(11/30/11)
+   - Create predefined blank tile where nothing is drawn :: DONE(11/30/11)
+   - Precalculate animation frame locations :: DONE(12/3/11)
+   - Show which side of a tile has been collided with. :: DONE(12/5/11)
+   - Add boundary action that keeps you from moving past edge :: DONE(12/5/11)
+   - Allow user to switch scenes
+   - Allow user to animate a tile
+   - Allow animation setting to play only a certain number of times
+   - Allow user to set a tile onClick callback
+   - Allow user to lock camera so that it will not display off tilemap
+   - Add scrolling background
+*/
+
 //variable holding key being pressed
   var currentKey = null;
   var keysDown = new Array(256);
@@ -52,13 +66,26 @@ function Animation(spriteSheet, imgWidth, imgHeight, cellWidth, cellHeight){//fo
   
   this.setup = function(){
     this.timer.start();
-	this.framesPerRow = this.imgWidth / this.cellWidth;
-	this.framesPerColumn = this.imgHeight / this.cellHeight;
+	this.framesPerRow = Math.floor( this.imgWidth / this.cellWidth );
+	this.framesPerColumn = Math.floor( this.imgHeight / this.cellHeight );
   }
   
   this.addCycle = function(cycleName, startingCell, frames){
-    cycle = new Array(cycleName, startingCell, frames);
+    cellLocs = this.calculateFrameLocations( startingCell, frames );
+    cycle = new Array(cycleName, startingCell, frames, cellLocs);
 	this.cycles.push(cycle);
+  }
+  
+  this.calculateFrameLocations = function( startCell, frames){
+    frameLocs = new Array();
+    for( i=0; i < frames; i++ ){
+	  row = Math.floor( ( startCell + i ) / this.framesPerRow );
+	  col = (startCell + i) - (row * this.framesPerRow);
+	  frameY = row * this.cellHeight;
+	  frameX = col * this.cellWidth;
+	  frameLocs[i] = new Array( frameX, frameY );
+	}
+	return frameLocs;
   }
   
   this.drawFrame = function(ctx){//most of the math in this function could be done only once if we want to make it faster
@@ -78,11 +105,8 @@ function Animation(spriteSheet, imgWidth, imgHeight, cellWidth, cellHeight){//fo
 	  this.fps = 0;
 	}
 	currentFrame = Math.floor( (this.totalCycleTime % this.animationLength) / this.frameDelta );
-	document.getElementById("FPS").innerHTML = this.animationLength;//for debugging
-	row = Math.floor( ( this.currentCycle[1] + currentFrame ) / this.framesPerRow );
-	col = (this.currentCycle[1] + currentFrame) - (row * Math.floor(this.imgWidth / this.cellWidth));
-	frameY = row * this.cellHeight;
-	frameX = col * this.cellWidth;
+	frameX = this.currentCycle[3][currentFrame][0];
+	frameY = this.currentCycle[3][currentFrame][1];
 	ctx.drawImage(this.sheet, frameX, frameY, this.cellWidth, this.cellHeight, 0 - (this.cellWidth / 2), 0 - (this.cellHeight / 2), this.cellWidth, this.cellHeight);
   }
   
@@ -152,18 +176,24 @@ function Camera(scene){
     // center the camera on the sprite
 	this.focalPointX = this.cameraOffsetX + this.cWidth/2;
 	this.focalPointY = this.cameraOffsetY + this.cHeight/2;
-	if(this.target && !this.checkFocusBounds() ){
-	  this.cameraOffsetX = this.target.x + (this.target.width/2) - (this.cWidth/2) + this.waitX;
-	  this.cameraOffsetY = this.target.y + (this.target.height/2) - (this.cHeight/2) + this.waitY;
+	mods = this.checkFocusBounds();
+	if(this.target){
+	  this.cameraOffsetX = this.target.x + (this.target.width/2) - (this.cWidth/2) + mods[0];
+	  this.cameraOffsetY = this.target.y + (this.target.height/2) - (this.cHeight/2) + mods[1];
 	}
   }
   
   this.checkFocusBounds = function(){
     centerX = this.target.x + (this.target.width/2);
 	centerY = this.target.y + (this.target.height/2);
-    if( Math.abs(this.focalPointX - centerX) >= this.waitX ){ return false; }
-	if( Math.abs(this.focalPointY - centerY) >= this.waitY ){ return false; }
-	else{ return true; }
+	distX = (this.focalPointX - centerX);
+	distY = (this.focalPointY - centerY);
+	waitModifier = new Array(distX, distY);
+    if( distX >= this.waitX ){ waitModifier[0] = this.waitX; }
+	if( distY >= this.waitY ){ waitModifier[1] = this.waitY; }
+	if( distX < -1*this.waitX ){ waitModifier[0] = -1*this.waitX; }
+	if( distY < -1*this.waitY ){ waitModifier[1] = -1*this.waitY; }
+	return waitModifier;
   }
 }
 
@@ -179,6 +209,8 @@ function Tile( mapX, mapY, x, y, type ){
   this.isCollidable = false;
   this.isClickable = false;
   this.clickCallback = false;
+  this.collisionType = NO_COLLISION;
+  this.lastFrameCollisionFlag = false;
   
   this.setCollision = function( callBack ){
     this.collisionCallback = callBack;
@@ -195,20 +227,42 @@ function Tile( mapX, mapY, x, y, type ){
   }
   
   this.checkCollision = function( sprite, w, h ){
-    shw = sprite.width/2;
-	shh = sprite.height/2;
-	scx = sprite.x + shw;
-	scy = sprite.y + shh;
-	thw = w/2;
-	thh = h/2;
-	tcx = this.x + thw;
-	tcy = this.y + thh;
-    if( Math.abs( scx - tcx ) < (thw + shw) ){
-	  if( Math.abs( scy - tcy ) < (thh + shh) ){
-	    this.collisionCallback(this);
-	  }
+    this.collisionType = NO_COLLISION;
+	setFlag = false;
+	if( this.collisionCallback != false ){
+		shw = sprite.width/2;
+		shh = sprite.height/2;
+		
+		tileLeft = this.x;
+		tileRight = this.x + w;
+		tileTop = this.y;
+		tileBottom = this.y + h;
+		spriteLeft = sprite.x - shw;
+		spriteRight = sprite.x + shw;
+		spriteTop = sprite.y - shh;
+		spriteBottom = sprite.y + shh;
+		
+		if (  !( (spriteBottom < tileTop) ||
+			     (spriteTop > tileBottom) ||
+			     (spriteRight < tileLeft) ||
+			     (spriteLeft > tileRight) ) ){
+			   
+			   if( Math.abs(sprite.dx) > Math.abs(sprite.dy) ){
+					if( sprite.dx < 0 ){ this.collisionType = COLLISION_RIGHT; sprite.x = tileRight + (shw+1); }
+					if( sprite.dx > 0 ){ this.collisionType = COLLISION_LEFT; sprite.x = tileLeft - (shw+1); }
+				}
+				else{
+					if( sprite.dy > 0 ){ this.collisionType = COLLISION_TOP; sprite.y = tileTop - (shh+1); }
+					if( sprite.dy < 0 ){ this.collisionType = COLLISION_BOTTOM; sprite.y = tileBottom + (shh+1); }
+				}
+				setFlag = true;
+				this.collisionCallback(this);
+		}
 	}
+	if(this.lastFrameCollisionFlag){ this.lastFrameCollisionFlag = false; }
+	if(setFlag){ this.lastFrameCollisionFlag = true; }
   }
+  
 }
 
 function TileMap(scene){
@@ -251,6 +305,7 @@ function TileMap(scene){
 	    while( notConverted && k < this.symbolImageMap.length ){
 		  if( mapArray[i][j] == this.symbolImageMap[k][2]){ this.mapData[i][j] = k; notConverted = false; } // convert tile symbols to integers for faster comparisons
 		  k++;
+		  if( mapArray[i][j] == "blank" ){ this.mapData[i][j] = -1; notConverted = false; k = -1; }
 		}
 		temp[j] = new Tile(j, i, j*this.tileWidth, i*this.tileHeight, k);// k = tile type
 	  }
@@ -265,12 +320,17 @@ function TileMap(scene){
 	  for(j = 0; j < this.mapData[i].length; j++){ //for each column of each row
 	    drawX = this.tiles[i][j].x - this.camera.cameraOffsetX;
 		drawY = this.tiles[i][j].y - this.camera.cameraOffsetY;
-		if( 0 < drawX < this.camera.cWidth && 0 < drawY < this.camera.cHeight ){//don't draw any tiles that will not be in the camera's view
+		if( 0 < drawX < this.camera.cWidth && 0 < drawY < this.camera.cHeight && this.mapData[i][j] != -1){
+		  //don't draw any tiles that will not be in the camera's view
+		  //also don't do any of this if the tile is blank
 	      ctx.save();
 	      sheetX = this.symbolImageMap[ this.mapData[i][j] ][0];
 		  sheetY = this.symbolImageMap[ this.mapData[i][j] ][1];
 		  ctx.translate(drawX, drawY);
 		  ctx.drawImage(this.tileSheet, sheetX, sheetY, this.tileWidth, this.tileHeight, 0, 0, this.tileWidth, this.tileHeight);
+		  if( this.tiles[i][j].collisionType != NO_COLLISION ){ 
+		    ctx.strokeRect(0,0,this.tileWidth,this.tileHeight);//collision debug helper
+		  }
 		  ctx.restore();
 		}
 	  }
@@ -324,8 +384,6 @@ function TileMap(scene){
   this.mapScroll = function( dx, dy ){ this.camera.moveCamera(dx, dy); }
   this.cameraFollowSprite = function(sprite, waitX, waitY){ this.camera.followSprite(sprite, waitX, waitY); }
   
-  this.loadZOrderMap = function( zMap ){}
-  
   this.addTileAnimation = function( imgWidth, imgHeight, cellWidth, cellHeight, type, animSheet ){
     this.animation = new Animation(animSheet, imgWidth, imgHeight, cellWidth, cellHeight);
 	this.animation.setup();
@@ -358,8 +416,48 @@ function TileMap(scene){
   }
   
   this.makeSpriteMapRelative = function(sprite){ sprite.setCameraRelative( this.camera ); }
+}
+
+function Physics(){
+  this.forces = new Array();
   
-  this.setPosition = function(){}
+  this.addForce = function( dx, dy, name ){
+    this.forces.push( new Array( dx, dy, name ) );
+  }
+  
+  this.changeForce = function( ddx, ddy, name ){
+    index = this.findForceIndex(name);
+	this.forces[index][0] += ddx;
+	this.forces[index][1] += ddy;
+  }
+  
+  this.setForce = function( dx, dy, name){
+    index = this.findForceIndex(name);
+	this.forces[index][0] = dx;
+	this.forces[index][1] = dy;
+  }
+  
+  this.removeForce = function( name ){
+    index = this.findForceIndex(name);
+	this.forces.splice(index, 1);
+  }
+  
+  this.findForceIndex = function( name ){
+    for( i = 0; i < this.forces.length; i++){
+	  if( this.forces[i][2] == name ){ return i; }
+	}
+	return -1; //if force is not found 
+  }
+  
+  this.applyPhysics = function( ){
+    dx = 0;
+	dy = 0;
+    for( i = 0; i < this.forces.length; i++ ){
+      dx += this.forces[i][0];
+	  dy += this.forces[i][1];
+	}
+	return new Array( dx, dy );
+  }
 }
 
 function Sprite(scene, imageFile, width, height){ 
@@ -372,6 +470,7 @@ function Sprite(scene, imageFile, width, height){
       Support multiple images / states (DONE 10/26/11)
       Sprite element now expects scene rather than canvas
     */
+  this.scene = scene;
   this.canvas = scene.canvas;
   this.context = this.canvas.getContext("2d");
   this.image = new Image();
@@ -385,10 +484,17 @@ function Sprite(scene, imageFile, width, height){
   this.y = 200;
   this.dx = 10;
   this.dy = 0;
+  this.ddx = 0;
+  this.ddy = 0;
   this.imgAngle = 0;
   this.moveAngle = 0;
   this.speed = 10;
   this.camera = false;
+  this.boundaryAction = BOUNDARY_WRAP;
+  this.physics = new Physics();
+  this.physics.addForce( this.dx, this.dy, "movement" );
+  this.physics.addForce( 0, 0, "gravity" ) //default is no gravity
+  this.isJumping = false;
 
   this.setPosition = function(x, y){
     //position is position of center
@@ -398,8 +504,43 @@ function Sprite(scene, imageFile, width, height){
   
   this.setX = function (nx){ this.x = nx; }
   this.setY = function (ny){ this.y = ny; }
-  this.setChangeX = function (ndx){ this.dx = ndx; }
-  this.setChangeY = function (ndy){ this.dx = ndx; }
+  
+  this.setChangeX = function (ndx){ 
+    this.dx = ndx; 
+	this.physics.setForce( this.dx, this.dy, "movement" );
+  }
+  
+  this.setChangeY = function (ndy){ 
+    this.dy = ndy; 
+	this.physics.setForce( this.dx, this.dy, "movement" ); 
+  }
+  
+  this.setGravity = function ( dx, dy ){ 
+    this.physics.setForce( dx, dy, "gravity" );
+  }
+  
+  this.turnOnGravity = function(){ 
+	this.physics.setForce( 0, 2, "gravity" ); // <0, 2> is the default gravity vector
+  }
+  
+  this.turnOffGravity = function(){ 
+    this.physics.removeForce("gravity");
+  }
+  
+  this.jump = function(){
+    if( this.isJumping != true ){ this.physics.addForce(0, -30, "jump"); }
+	this.isJumping = true;
+  }
+  
+  this.land = function(){
+    this.physics.removeForce("jump");
+	this.isJumping = false;
+  }
+  
+  this.setBoundaryAction = function(action){
+    if( action == BOUNDARY_SCROLL && this.camera == false ){ this.camera = new Camera(this.scene); }
+    this.boundaryAction = action;
+  }
 
   this.draw = function(){
     //draw self on canvas;
@@ -414,6 +555,7 @@ function Sprite(scene, imageFile, width, height){
     //draw image with center on origin
 	if( this.animation != false ){
       this.animation.drawFrame(ctx);
+      ctx.strokeRect(0 - this.width/2,0 - this.height/2,this.width,this.height);//collision debug helper
 	}
 	else{
 	  ctx.drawImage(this.image, 
@@ -425,11 +567,18 @@ function Sprite(scene, imageFile, width, height){
      
   } // end draw function
 
+  this.applyPhysics = function(){
+    if(this.isJumping == true ){ this.physics.changeForce(0, 2, "jump"); }
+    velocityVec = this.physics.applyPhysics( ); 
+	this.dx = velocityVec[0];
+	this.dy = velocityVec[1];
+	this.x += this.dx;
+	this.y += this.dy;
+  }
+  
   this.update = function(){
-    this.x += this.dx;
-    this.y += this.dy;
-    this.checkBounds();
-
+	
+	this.checkBounds();
     this.draw();
   } // end update
 
@@ -445,19 +594,27 @@ function Sprite(scene, imageFile, width, height){
 	topBorder = camY;
 	bottomBorder = this.cHeight + camY;
     if (this.x > rightBorder){
-      this.x = leftBorder;
+      if( this.boundaryAction == BOUNDARY_WRAP ){ this.x = leftBorder; }
+	  if( this.boundaryAction == BOUNDARY_STOP ){ this.x = rightBorder; }
+	  if( this.boundaryAction == BOUNDARY_SCROLL && this.camera ){ this.camera.moveCamera( (this.cHeight-this.height), 0 ); }
     } // end if
 
     if (this.y > bottomBorder){
-      this.y = topBorder;
+	  if( this.boundaryAction == BOUNDARY_WRAP ){ this.y = topBorder; }
+      if( this.boundaryAction == BOUNDARY_STOP ){ this.y = bottomBorder; }
+	  if( this.boundaryAction == BOUNDARY_SCROLL && this.camera ){ this.camera.moveCamera(0, (this.cHeight-this.height) ); }
     } // end if
 
     if (this.x < leftBorder){
-      this.x = rightBorder;
+	  if( this.boundaryAction == BOUNDARY_WRAP ){ this.x = rightBorder; }
+      if( this.boundaryAction == BOUNDARY_STOP ){ this.x = leftBorder; }
+	  if( this.boundaryAction == BOUNDARY_SCROLL && this.camera ){ this.camera.moveCamera( -1*(this.cHeight-this.height), 0 ); }
     } // end if
 
     if (this.y < topBorder){
-      this.y = bottomBorder;
+	  if( this.boundaryAction == BOUNDARY_WRAP ){ this.y = bottomBorder; }
+      if( this.boundaryAction == BOUNDARY_STOP ){ this.y = topBorder; }
+      if( this.boundaryAction == BOUNDARY_SCROLL && this.camera ){ this.camera.moveCamera(0, -1*(this.cHeight-this.height) ); }
     }
   } // end checkbounds
 
@@ -481,9 +638,9 @@ function Sprite(scene, imageFile, width, height){
 	    if( slicingFlag == SINGLE_COLUMN ){ numCycles = (iHeight/cHeight)/framesArray; }
 		else if( typeof slicingFlag == "undefined" ){ numCycles = (iHeight/cHeight); framesArray = iWidth/cWidth; }
 	    else{ numCycles = (iWidth/cWidth)/framesArray; }
-		for(i = 0; i < numCycles; i++){
-		  cycleName = "cycle" + (i+1);
-		  this.specifyCycle(cycleName, i*framesArray, framesArray);
+		for(t = 0; t < numCycles; t++){
+		  cycleName = "cycle" + (t+1);
+		  this.specifyCycle(cycleName, t*framesArray, framesArray);
 		}
 	  }
 	  else{
@@ -516,11 +673,13 @@ function Sprite(scene, imageFile, width, height){
   this.setSpeed = function(speed){
     this.speed = speed;
     this.calcVector();
+	this.physics.setForce(this.dx, this.dy, "movement");
   } // end setSpeed
 
   this.changeSpeedBy = function(diff){
     this.speed += diff;
     this.calcVector();
+	this.physics.setForce(this.dx, this.dy, "movement");
   } // end changeSpeedBy
 
   this.setImgAngle = function(degrees){
@@ -538,6 +697,7 @@ function Sprite(scene, imageFile, width, height){
     //convert to radians
     this.moveAngle = degrees * Math.PI / 180;
     this.calcVector();
+	this.physics.setForce(this.dx, this.dy, "movement");
   } // end setMoveAngle
 
   this.changeMoveAngleBy = function(degrees){
@@ -546,6 +706,7 @@ function Sprite(scene, imageFile, width, height){
     //add radian diff to moveAngle
     this.moveAngle += diffRad;
     this.calcVector();
+	this.physics.setForce(this.dx, this.dy, "movement");
   } // end changeMoveAngleBy
 
   //convenience functions combine move and img angles
@@ -787,3 +948,7 @@ K_LEFT = 37; K_RIGHT = 39; K_UP = 38;K_DOWN = 40; K_SPACE = 32;
 //Animation Constants
 SINGLE_ROW = 1; SINGLE_COLUMN = 2; VARIABLE_LENGTH = 3;
 PLAY_ONCE = 1; PLAY_LOOP = 2;
+//Collision Constants
+NO_COLLISION = 0; COLLISION_TOP = 1; COLLISION_BOTTOM = 2; COLLISION_LEFT = 3; COLLISION_RIGHT = 4
+//Boundary Constants
+BOUNDARY_WRAP = 1; BOUNDARY_STOP = 2; BOUNDARY_DIE = 3;BOUNDARY_SCROLL = 4;
